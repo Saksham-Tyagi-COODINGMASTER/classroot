@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f19" />
+  <meta name="color-scheme" content="dark" />
+  <script>
+    /* apply saved theme before first paint to avoid a flash */
+    (function () { try {
+      var t = localStorage.getItem("cltTheme"), a = localStorage.getItem("cltAccent");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      if (a === "neon") document.documentElement.setAttribute("data-accent", "neon");
+    } catch (e) {} })();
+  </script>
+  <title>CLASSROOT — College Scheduling Portal</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%230b0f19%22/%3E%3Cg%20stroke=%22%2333d6ff%22%20stroke-width=%222.6%22%3E%3Cpath%20d=%22M32%2040V22M32%2033l-7-6v-6M32%2033l7-6v-6M32%2028l-10-5h-4M32%2028l10-5h4M32%2022l-4-6v-5M32%2022l4-6v-5M32%2022V8%22/%3E%3C/g%3E%3Cg%20fill=%22%2333d6ff%22%3E%3Ccircle%20cx=%2225%22%20cy=%2219%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2239%22%20cy=%2219%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2216.5%22%20cy=%2223%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2247.5%22%20cy=%2223%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2228%22%20cy=%229.5%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2236%22%20cy=%229.5%22%20r=%222.4%22/%3E%3Ccircle%20cx=%2232%22%20cy=%226%22%20r=%222.4%22/%3E%3C/g%3E%3Cpath%20d=%22M32%2052Q18%2046%206%2048M32%2052Q46%2046%2058%2048M32%2052V43%22%20stroke=%22%23eaf6ff%22%20stroke-width=%222.4%22/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- CLASSROOT logo: a digital circuit tree growing out of an open book (reused via <use href="#crLogo">) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="crLogo" viewBox="0 0 64 64">
+      <g class="lg-tree" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 41V24"/>
+        <path d="M32 34l-7-6v-7"/><path d="M32 34l7-6v-7"/>
+        <path d="M32 29l-10-5h-5"/><path d="M32 29l10-5h5"/>
+        <path d="M25 21l-4-5"/><path d="M39 21l4-5"/>
+        <path d="M32 24l-4-6v-6"/><path d="M32 24l4-6v-6"/><path d="M32 24V9"/>
+        <path d="M32 40l-4 3h-4"/><path d="M32 40l4 3h4"/>
+      </g>
+      <g class="lg-node">
+        <circle cx="25" cy="19.5" r="2.3"/><circle cx="39" cy="19.5" r="2.3"/>
+        <circle cx="15.5" cy="24" r="2.3"/><circle cx="48.5" cy="24" r="2.3"/>
+        <circle cx="21" cy="14.5" r="2.1"/><circle cx="43" cy="14.5" r="2.1"/>
+        <circle cx="28" cy="10.2" r="2.3"/><circle cx="36" cy="10.2" r="2.3"/><circle cx="32" cy="6.4" r="2.5"/>
+      </g>
+      <g class="lg-book" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 51Q18 45.5 5 48l2.5-7.5Q20 38.5 32 44.5Q44 38.5 56.5 40.5L59 48Q46 45.5 32 51Z"/>
+        <path d="M32 44.5V51"/>
+        <path d="M32 54Q19 49.5 8 52M32 54Q45 49.5 56 52"/>
+      </g>
+    </symbol>
+  </svg>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <!-- ===================================================================
+       LOCKSCREEN / LOGIN VIEW
+       =================================================================== -->
+  <main id="loginView" class="login-screen">
+    <section class="login-card" aria-labelledby="loginTitle">
+      <div class="login-brand"><svg class="brand-logo-svg login-logo" viewBox="0 0 64 64" role="img" aria-label="CLASSROOT logo"><use href="#crLogo"/></svg><span class="brand-word">CLASS<b>ROOT</b></span></div>
+      <p class="eyebrow">INSTITUTIONAL ACCESS</p>
+      <h1 id="loginTitle">Welcome <span>back.</span></h1>
+      <p class="muted login-copy">Sign in with your institution email to manage rooms, schedules and class arrangements.</p>
+
+      <form id="loginForm" novalidate>
+        <label for="userEmail">Institution email</label>
+        <div class="field">
+          <input id="userEmail" name="email" type="email" inputmode="email" placeholder="name@clt.edu" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+        </div>
+        <p class="field-hint">Accepted domains: <code>@clt.edu</code> · <code>@college.edu</code></p>
+
+        <label for="userPassword">Password</label>
+        <div class="field has-action">
+          <input id="userPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
+          <button id="togglePassword" class="field-action" type="button" aria-label="Show password" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+
+        <button class="button button-primary full-width" type="submit">Sign in <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="login-foot">Demo portal · Sign-in is local to this browser</p>
+    </section>
+  </main>
+
+  <!-- Invalid-login warning dialog -->
+  <dialog id="authDialog" class="auth-dialog" aria-labelledby="authDialogTitle" aria-describedby="authDialogMessage">
+    <div class="auth-dialog-inner">
+      <span class="auth-dialog-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r=".6" fill="currentColor"/></svg>
+      </span>
+      <p class="eyebrow auth-dialog-eyebrow">ACCESS DENIED</p>
+      <h2 id="authDialogTitle">Invalid login</h2>
+      <p id="authDialogMessage" class="muted">Please check your details and try again.</p>
+      <button id="authDialogClose" class="button button-primary full-width" type="button" autofocus>Try again</button>
+    </div>
+  </dialog>
+
+  <!-- ===================================================================
+       APPLICATION VIEW (visible only while signed in)
+       =================================================================== -->
+  <div id="appView" class="app-shell hidden">
+    <header class="topbar">
+      <a id="brandLink" class="brand glass-pill" href="#" aria-label="CLASSROOT home"><svg class="brand-logo-svg" viewBox="0 0 64 64" role="img" aria-label="CLASSROOT logo"><use href="#crLogo"/></svg><span class="brand-word">CLASS<b>ROOT</b></span></a>
+
+      <nav id="mainNav" class="main-nav" aria-label="Main navigation"></nav>
+
+      <div class="topbar-right">
+        <button id="themeQuick" class="theme-quick flat-pill" type="button" aria-label="Switch to light mode" title="Toggle dark / light mode"><span class="tq-icon" aria-hidden="true">☀</span></button>
+        <span id="rolePill" class="role-pill flat-pill">Professor</span>
+
+        <div id="userMenuWrap" class="user-menu-wrap">
+          <button id="userMenu" class="user-menu glass-pill" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="userDropdown">
+            <span id="avatarInitial" class="avatar">U</span>
+            <span id="userLabel" class="user-label">User</span>
+            <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+
+          <div id="userDropdown" class="user-dropdown" role="menu" aria-labelledby="userMenu">
+            <div class="dropdown-head">
+              <span id="dropdownAvatar" class="avatar large">U</span>
+              <div><b id="dropdownName">User</b><small id="dropdownEmail">user@clt.edu</small></div>
+            </div>
+            <div class="dropdown-sep" role="separator"></div>
+            <button id="signOutBtn" class="dropdown-item danger" type="button" role="menuitem">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              <span>Sign out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="pageWrap" class="page-wrap">
+      <section id="welcomeRow" class="welcome-row">
+        <div>
+          <p class="eyebrow" id="dateLabel">CLT · ROOM OPERATIONS</p>
+          <h1 id="pageTitle">Room schedule</h1>
+          <p class="muted" id="pageSubtitle">A clear view of what's happening across the theatre.</p>
+        </div>
+        <div class="live-indicator"><i></i> Demo environment</div>
+      </section>
+
+      <!-- ================= SCHEDULE TAB ================= -->
+      <section id="schedulePage" class="page-section">
+        <div class="section-toolbar">
+          <div class="segmented" id="scheduleDayTabs" role="tablist" aria-label="Day of week">
+            <button class="active" type="button" role="tab" data-day="Monday">Monday</button>
+            <button type="button" role="tab" data-day="Tuesday">Tuesday</button>
+            <button type="button" role="tab" data-day="Wednesday">Wednesday</button>
+            <button type="button" role="tab" data-day="Thursday">Thursday</button>
+            <button type="button" role="tab" data-day="Friday">Friday</button>
+            <button type="button" role="tab" data-day="Saturday" class="weekend">Saturday</button>
+          </div>
+          <span class="muted small-text" id="scheduleMeta">Weekly timetable · CLT</span>
+        </div>
+
+        <!-- PROFESSOR VIEW: teaching timetable (rooms × time slots) -->
+        <div id="professorView" class="schedule-view hidden">
+          <div class="stat-strip" id="profStats"></div>
+          <div class="panel timetable-panel">
+            <div class="table-scroll">
+              <table class="timetable">
+                <thead id="scheduleHead"></thead>
+                <tbody id="scheduleBody"></tbody>
+              </table>
+            </div>
+            <p class="table-note">Schedule data is sample content. Edit <code>professorScheduleData</code> in <code>script.js</code> with your official teaching timetable. Bookings you publish from the Slots tab appear here automatically.</p>
+          </div>
+        </div>
+
+        <!-- STUDENT VIEW: class slot agenda -->
+        <div id="studentView" class="schedule-view student-layout hidden">
+          <div class="panel agenda-panel">
+            <div class="panel-heading"><div><p class="eyebrow">CLASS SLOTS</p><h2 id="agendaHeading">Monday</h2></div><span class="muted small-text" id="agendaCount">0 classes</span></div>
+            <div id="studentAgenda" class="agenda"></div>
+            <p class="table-note">Schedule data is sample content. Edit <code>studentScheduleData</code> in <code>script.js</code> with your official class slots.</p>
+          </div>
+          <aside class="panel day-summary" id="studentSummary"></aside>
+        </div>
+      </section>
+
+      <!-- ================= EVENTS TAB ================= -->
+      <section id="eventsPage" class="page-section hidden">
+        <div class="section-toolbar">
+          <div class="segmented" id="eventFilterTabs" role="tablist" aria-label="Event filter">
+            <button class="active" type="button" role="tab" data-filter="upcoming">Upcoming</button>
+            <button type="button" role="tab" data-filter="past">Past</button>
+            <button type="button" role="tab" data-filter="all">All</button>
+          </div>
+          <div class="toolbar-actions">
+            <span class="muted small-text" id="eventsMeta">Campus events · CLT</span>
+            <button id="eventsAddBtn" class="button button-quiet hidden" type="button"><span aria-hidden="true">＋</span> Add event</button>
+          </div>
+        </div>
+
+        <div class="student-layout">
+          <div class="panel agenda-panel">
+            <div class="panel-heading"><div><p class="eyebrow">EVENT TIMELINE</p><h2 id="eventsHeading">Upcoming events</h2></div><span class="muted small-text" id="eventsCount">0 events</span></div>
+            <div id="eventsAgenda" class="agenda"></div>
+            <p class="table-note">Events are sample content stored in this browser. Edit <code>defaultEventsData</code> in <code>script.js</code> to change the starting list.</p>
+          </div>
+          <aside class="panel day-summary" id="eventsSummary"></aside>
+        </div>
+
+        <!-- Floating add-event pill (professors and unlocked students only) -->
+        <button id="eventFab" class="event-fab hidden" type="button" aria-label="Add a new event">
+          <span class="fab-plus" aria-hidden="true">＋</span><span>Add event</span>
+        </button>
+      </section>
+
+      <!-- ================= OFFICE TAB ================= -->
+      <section id="officePage" class="page-section hidden">
+        <div class="section-toolbar">
+          <div class="toolbar-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input id="officeSearch" type="text" placeholder="Search name, department or room" autocomplete="off" spellcheck="false" aria-label="Search the office directory" />
+          </div>
+          <div class="toolbar-actions">
+            <span class="muted small-text" id="officeMeta">Faculty directory · CLT</span>
+            <button id="officeNowToggle" class="chip-toggle" type="button" aria-pressed="false"><i aria-hidden="true"></i>Available now</button>
+          </div>
+        </div>
+
+        <div class="office-layout">
+          <div class="panel agenda-panel">
+            <div class="panel-heading"><div><p class="eyebrow">FACULTY DIRECTORY</p><h2 id="officeHeading">Offices &amp; consultation hours</h2></div><span class="muted small-text" id="officeCount">0 faculty</span></div>
+            <div id="officeGrid" class="office-grid"></div>
+            <p class="table-note">Sample directory. Edit <code>OFFICE_DIRECTORY</code> in <code>script.js</code> to list every professor; professors can update their own office from this tab.</p>
+          </div>
+
+          <!-- Professor: edit own office -->
+          <aside id="officeEditor" class="panel office-aside hidden">
+            <p class="eyebrow">YOUR OFFICE</p>
+            <h2>Location &amp; consultation hours</h2>
+            <p class="muted small-text">Students see this in the faculty directory straight away.</p>
+            <form id="officeForm" novalidate>
+              <label for="officeLocation">Office location</label>
+              <input id="officeLocation" type="text" maxlength="60" placeholder="e.g. Block A, Room 302" autocomplete="off" />
+              <div class="office-windows-head"><label>Consultation timings</label></div>
+              <div id="officeWindows" class="office-windows"></div>
+              <button id="officeAddWindow" class="button button-quiet add-window" type="button">＋ Add a time window</button>
+              <label for="officeNotes">Notes <span class="optional">(optional)</span></label>
+              <textarea id="officeNotes" rows="2" maxlength="120" placeholder="e.g. Email ahead for appointments"></textarea>
+              <p id="officeError" class="form-msg" role="alert"></p>
+              <button class="button button-primary full-width" type="submit">Save office details <span aria-hidden="true">↗</span></button>
+            </form>
+          </aside>
+
+          <!-- Student: read-only summary -->
+          <aside id="officeSummary" class="panel office-aside hidden"></aside>
+        </div>
+      </section>
+
+      <!-- ================= SLOTS TAB: BLUEPRINT STAGE ================= -->
+      <section id="slotsPage" class="page-section slots-stage hidden" aria-label="CLT floor plan blueprint">
+        <div class="blueprint-canvas" id="mapFrame">
+          <svg id="cltMapSVG" viewBox="0 0 700 660" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Architectural blueprint of the Central Lecture Theatre showing room availability"></svg>
+        </div>
+
+        <!-- Left column: title block (with search & filters) + room inspector. Stacked so they never overlap. -->
+        <div class="bp-leftcol">
+        <div class="bp-titleblock float-panel">
+          <p class="eyebrow">SHEET A-101 · LIVE ROOM DIRECTORY</p>
+          <div class="tb-head">
+            <h2>CLT floor plan</h2>
+            <div class="floor-select-wrap"><label for="floorSelect">FLOOR</label>
+              <select id="floorSelect">
+                <option value="Lower Ground Floor">Lower Ground Floor</option>
+                <option value="Ground Floor">Ground Floor</option>
+                <option value="1st Floor">1st Floor</option>
+                <option value="2nd Floor">2nd Floor</option>
+               <option value="3rd Floor">3rd Floor</option>
+              </select>
+            </div>
+          </div>
+          <div class="view-row" role="group" aria-label="Show room status for a day and time">
+            <div class="floor-select-wrap"><label for="viewDay">DAY</label><select id="viewDay"></select></div>
+            <div class="floor-select-wrap"><label for="viewSlot">TIME</label><select id="viewSlot"></select></div>
+            <button id="viewNow" class="view-now" type="button">Now</button>
+          </div>
+          <ul class="bp-legend" aria-label="Room status legend">
+            <li><i class="swatch free"></i>Free <b id="countFree">0</b></li>
+            <li><i class="swatch booked"></i>Booked <b id="countBooked">0</b></li>
+            <li><i class="swatch clash"></i>Clash <b id="countClash">0</b></li>
+          </ul>
+          <p class="tb-meta"><span id="roomCount">0 rooms listed</span><span>Scale 1 : 200 · Hover for capacity</span></p>
+        </div>
+
+        <!-- Room inspector -->
+        <aside class="bp-inspector float-panel" id="roomInspector">
+          <div class="panel-heading"><div><p class="eyebrow">ROOM INTELLIGENCE</p><h2>Room alerts</h2></div><span class="alert-count" id="alertCount">0</span></div>
+          <div id="roomDetails" class="room-details"></div>
+          <div class="alert-feed"><h3>Recent activity</h3><div id="activityFeed"></div></div>
+        </aside>
+        </div><!-- /.bp-leftcol -->
+
+        <!-- Top-right search pill: room search + subject / seat-size filters -->
+        <div id="bpFind" class="bp-find bp-searchpill float-panel" role="search" aria-label="Find rooms">
+          <div class="find-search">
+            <svg class="find-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input id="roomSearch" type="text" inputmode="search" placeholder="Search rooms · e.g. LG-01" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Search rooms by name or number" aria-controls="findResults" />
+            <button id="findClear" class="find-clear hidden" type="button" aria-label="Clear search and filters">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+            <button id="findToggle" class="find-toggle" type="button" aria-expanded="true" aria-controls="findBody" aria-label="Show or hide filters">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8L4 5z"/></svg>
+            </button>
+          </div>
+          <div id="findBody" class="find-body">
+            <div id="findFilters" class="find-filters">
+              <div class="find-field"><label for="subjectFilter">Subject</label><select id="subjectFilter"></select></div>
+              <div class="find-field"><label for="seatFilter">Seat size</label><select id="seatFilter"></select></div>
+            </div>
+            <div id="findStatus" class="find-status" role="status" aria-live="polite"></div>
+            <div id="findResults" class="find-results"></div>
+          </div>
+        </div>
+
+        <!-- Floating booking pill (only exists inside the Slots tab) -->
+        <form id="bookingForm" class="booking-pill" aria-labelledby="bookingTitle">
+          <button id="bookingToggle" class="booking-head" type="button" aria-expanded="true" aria-controls="bookingFields">
+            <span class="panel-icon" aria-hidden="true">＋</span>
+            <span class="booking-head-text"><small>PROFESSOR TOOLS</small><b id="bookingTitle">Publish a Booking</b></span>
+            <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="booking-body">
+            <div id="bookingFields" class="booking-fields">
+              <div class="booking-form">
+                <label for="bookingDate">Date</label><input id="bookingDate" type="date" required />
+                <label for="batchName">Batch name</label><input id="batchName" placeholder="e.g. CSE-A 2026" required />
+                <label for="subjectName">Subject</label><select id="subjectName" required><option value="">Select subject</option></select>
+                <div class="form-two">
+                  <div><label for="bookingTime">Time</label><select id="bookingTime"></select></div>
+                  <div><label for="bookingRoom">Room no.</label><select id="bookingRoom" required></select></div>
+                </div>
+                <p id="bookingFilterHint" class="form-hint filter-hint hidden"></p>
+                <button class="button button-primary full-width" type="submit">Confirm &amp; publish <span aria-hidden="true">↗</span></button>
+                <p class="form-hint">Bookings are simulated and stored in this browser only.</p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= REPORT TAB ================= -->
+      <section id="reportPage" class="page-section hidden">
+        <div class="section-toolbar">
+          <span class="muted small-text" id="reportMeta">Analytics · CLT</span>
+          <button id="exportCsvBtn" class="button button-primary export-btn hidden" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+            Export CSV Report
+          </button>
+        </div>
+        <div class="report-grid report-grid-4" id="reportCards"></div>
+
+        <!-- PROFESSOR ANALYTICS -->
+        <div id="reportProf" class="report-stack hidden">
+          <div class="panel report-panel">
+            <div class="panel-heading"><div><p class="eyebrow">UTILIZATION HEATMAP</p><h2>Peak vs idle hours</h2></div><span class="muted small-text" id="heatMeta">Sessions per slot</span></div>
+            <div class="heat-scroll"><div id="heatmap" class="heatmap" role="table" aria-label="Weekly room utilization heatmap"></div></div>
+            <div class="heat-legend" aria-hidden="true"><span>Idle</span><i></i><span>Peak</span></div>
+            <div id="hourBars" class="report-breakdown hour-bars"></div>
+          </div>
+          <div class="report-split">
+            <div class="panel report-panel">
+              <div class="panel-heading"><div><p class="eyebrow">DEPARTMENTAL ALLOCATION</p><h2>Bookings by batch</h2></div><span class="muted small-text" id="deptMeta">0 sessions</span></div>
+              <div class="dept-wrap"><div id="deptDonut" class="donut" role="img" aria-label="Departmental allocation chart"><div class="donut-hole"><strong id="deptTotal">0</strong><small>sessions</small></div></div><div id="deptBars" class="report-breakdown"></div></div>
+            </div>
+            <div class="panel report-panel">
+              <div class="panel-heading"><div><p class="eyebrow">AUDIT LOG</p><h2>Recent activity</h2></div><span class="muted small-text" id="auditMeta">0 entries</span></div>
+              <div id="auditList" class="audit-list"></div>
+              <p class="table-note">"Export CSV Report" downloads the full audit log and every booking as a spreadsheet-ready file.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- STUDENT ANALYTICS -->
+        <div id="reportStudent" class="report-stack hidden">
+          <div class="report-split">
+            <div class="panel report-panel">
+              <div class="panel-heading"><div><p class="eyebrow">SCHEDULE DENSITY</p><h2>Weekly academic load</h2></div><span class="muted small-text" id="densityMeta">—</span></div>
+              <div class="density-wrap">
+                <div id="densityGauge" class="gauge" role="img" aria-label="Weekly load gauge"><div class="gauge-hole"><strong id="gaugeValue">0%</strong><small id="gaugeLabel">Light</small></div></div>
+                <div id="densityDays" class="density-days"></div>
+              </div>
+            </div>
+            <div class="panel report-panel">
+              <div class="panel-heading"><div><p class="eyebrow">CLASS SPLIT</p><h2>Lectures vs extra sessions</h2></div><span class="muted small-text" id="splitMeta">—</span></div>
+              <div id="splitBar" class="split-bar" role="img" aria-label="Regular vs extra class split"></div>
+              <div id="splitLegend" class="split-legend"></div>
+            </div>
+          </div>
+          <div class="panel report-panel">
+            <div class="panel-heading"><div><p class="eyebrow">PRIMARY VENUES</p><h2>Where your classes happen</h2></div><span class="muted small-text" id="venueMeta">—</span></div>
+            <div class="report-split venue-split"><div id="floorBars" class="report-breakdown"></div><div id="roomBars" class="report-breakdown"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SETTINGS TAB ================= -->
+      <section id="settingsPage" class="page-section hidden">
+        <div class="settings-grid">
+          <!-- Appearance -->
+          <div class="panel settings-panel">
+            <p class="eyebrow">APPEARANCE</p>
+            <h2>Visual theme</h2>
+            <p class="muted">Pick how CLASSROOT looks. Your choice is remembered on this device.</p>
+            <div class="settings-row">
+              <div><b>Dark / Light mode</b><p class="muted" id="themeHint">Obsidian blueprint is active.</p></div>
+              <button id="themeSwitch" class="switch theme-switch" type="button" role="switch" aria-checked="true" aria-label="Light mode"><span class="switch-icons" aria-hidden="true"><i>☾</i><i>☀</i></span><span class="switch-knob"></span></button>
+            </div>
+            <div class="settings-row stack">
+              <div><b>Accent colour</b><p class="muted">Switch the highlight colour across the whole interface.</p></div>
+              <div class="accent-options" id="accentOptions" role="radiogroup" aria-label="Accent colour">
+                <button type="button" class="accent-chip active" role="radio" aria-checked="true" data-accent="cyan"><i class="dot cyan"></i>Blueprint Cyan</button>
+                <button type="button" class="accent-chip" role="radio" aria-checked="false" data-accent="neon"><i class="dot neon"></i>High-Contrast Neon</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="panel settings-panel">
+            <p class="eyebrow">NOTIFICATIONS</p>
+            <h2>Alert preferences</h2>
+            <p class="muted">Alerts appear inside the portal while you are signed in.</p>
+            <div class="settings-row"><div><b>Instant scheduling alerts</b><p class="muted">Get notified when bookings or events are published or changed.</p></div><button class="switch" type="button" role="switch" aria-checked="true" data-pref="instant" aria-label="Instant scheduling alerts"><span class="switch-knob"></span></button></div>
+            <div class="settings-row"><div><b>Room change alerts</b><p class="muted">Warn me about room clashes and venue changes.</p></div><button class="switch" type="button" role="switch" aria-checked="true" data-pref="roomChange" aria-label="Room change alerts"><span class="switch-knob"></span></button></div>
+            <div class="settings-row"><div><b>15-minute class reminders</b><p class="muted">A heads-up before each of today's classes begins.</p></div><button class="switch" type="button" role="switch" aria-checked="false" data-pref="reminder15" aria-label="15-minute class reminders"><span class="switch-knob"></span></button></div>
+          </div>
+
+          <!-- Calendar sync (ICS) -->
+          <div class="panel settings-panel">
+            <p class="eyebrow">CALENDAR SYNC</p>
+            <h2>Export to your calendar</h2>
+            <p class="muted">Download an <code>.ics</code> file and import it into Google Calendar, Apple Calendar or Outlook.</p>
+            <div class="settings-row"><div><b>Repeat my timetable for</b><p class="muted" id="icsHint">—</p></div>
+              <select id="icsWeeks" class="mini-select" aria-label="Number of weeks to export"><option value="4">4 weeks</option><option value="8">8 weeks</option><option value="16" selected>16 weeks</option></select></div>
+            <div class="settings-row"><div><b>Include campus events</b><p class="muted">Adds upcoming events from the Events tab.</p></div><button id="icsEvents" class="switch" type="button" role="switch" aria-checked="true" aria-label="Include campus events"><span class="switch-knob"></span></button></div>
+            <div class="settings-row"><div><b>Calendar file</b><p class="muted">Class times use your calendar's local time zone.</p></div><button id="icsDownload" class="button button-primary" type="button">Download .ics</button></div>
+          </div>
+
+          <!-- Account & security -->
+          <div class="panel settings-panel">
+            <p class="eyebrow">ACCOUNT &amp; SECURITY</p>
+            <h2>Account center</h2>
+            <div class="settings-row"><div><b>Institution email</b><p class="muted" id="settingsUser">—</p></div><span class="role-pill" id="settingsRole">—</span></div>
+
+            <form id="passwordForm" class="settings-row stack" novalidate>
+              <div><b>Change password</b><p class="muted">Updates your demo sign-in password for this browser.</p></div>
+              <div class="inline-form">
+                <input id="pwCurrent" type="password" placeholder="Current password" autocomplete="current-password" aria-label="Current password" />
+                <input id="pwNew" type="password" placeholder="New password (8+ chars)" autocomplete="new-password" aria-label="New password" />
+                <button class="button button-quiet" type="submit">Update password</button>
+              </div>
+              <p id="pwMessage" class="form-msg" role="status"></p>
+            </form>
+
+            <div class="settings-row stack" id="passcodeSettings">
+              <div><b>Event passcode</b><p class="muted" id="passcodeSettingsHint">—</p></div>
+              <div class="inline-form" id="passcodeAdminForm">
+                <input id="passcodeNew" type="text" placeholder="New event passcode (4+ characters)" autocomplete="off" aria-label="New event passcode" />
+                <button id="passcodeSave" class="button button-quiet" type="button">Save passcode</button>
+              </div>
+              <div class="inline-form" id="passcodeStudentForm">
+                <button id="passcodeUnlockBtn" class="button button-quiet" type="button">Enter passcode</button>
+                <button id="passcodeLockBtn" class="button button-quiet" type="button">Lock editing</button>
+              </div>
+            </div>
+
+            <div class="settings-row"><div><b>Clear local session cache</b><p class="muted">Removes bookings, events, office edits, the audit log and unlocked access saved in this browser. Theme and notification choices are kept.</p></div><button id="clearCache" class="button button-danger" type="button">Clear cache</button></div>
+          </div>
+
+          <!-- Demo data -->
+          <div class="panel settings-panel">
+            <p class="eyebrow">DEMO DATA</p>
+            <h2>Sample content</h2>
+            <div class="settings-row"><div><b>Room data</b><p class="muted">Edit the room list and capacities in <code>script.js</code>.</p></div><span class="status-tag">Local demo</span></div>
+            <div class="settings-row"><div><b>Load sample bookings</b><p class="muted">Adds example bookings so you can preview the Free, Booked and Clash map states.</p></div><button id="seedBookings" class="button button-quiet" type="button">Load samples</button></div>
+            <div class="settings-row"><div><b>Reset demo bookings</b><p class="muted">Remove bookings created in this browser.</p></div><button id="resetBookings" class="button button-quiet" type="button">Reset bookings</button></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer"><span>CLASSROOT · COLLEGE SCHEDULING PORTAL</span><span>Designed for smoother campus operations</span></footer>
+    </main>
+  </div>
+
+  <!-- Event passcode modal (students must unlock before editing events) -->
+  <dialog id="passcodeDialog" class="modal-dialog" aria-labelledby="passcodeTitle" aria-describedby="passcodeMessage">
+    <form id="passcodeForm" class="modal-inner passcode-inner" method="dialog" novalidate>
+      <span class="modal-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.1" fill="currentColor"/></svg>
+      </span>
+      <p class="eyebrow">RESTRICTED ACTION</p>
+      <h2 id="passcodeTitle">Event passcode</h2>
+      <p id="passcodeMessage" class="muted">Enter the event passcode to add, announce or edit events. Without it you can still view every event.</p>
+      <div class="field passcode-field">
+        <label for="passcodeInput" class="sr-only">Event passcode</label>
+        <input id="passcodeInput" type="password" placeholder="Event passcode" autocomplete="off" autocapitalize="none" spellcheck="false" />
+      </div>
+      <p id="passcodeError" class="modal-error" role="alert" aria-live="assertive"></p>
+      <div class="modal-actions">
+        <button id="passcodeCancel" class="button button-quiet" type="button">Stay view-only</button>
+        <button class="button button-primary" type="submit">Unlock <span aria-hidden="true">↗</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / edit event modal -->
+  <dialog id="eventDialog" class="modal-dialog event-dialog" aria-labelledby="eventDialogTitle">
+    <form id="eventForm" class="modal-inner" method="dialog" novalidate>
+      <p class="eyebrow" id="eventDialogEyebrow">ANNOUNCE AN EVENT</p>
+      <h2 id="eventDialogTitle">New event</h2>
+      <div class="booking-form event-fields">
+        <label for="eventTitle">Title</label><input id="eventTitle" placeholder="e.g. Tech Fest Orientation" maxlength="80" required />
+        <div class="form-two">
+          <div><label for="eventDate">Date</label><input id="eventDate" type="date" required /></div>
+          <div><label for="eventCategory">Category</label>
+            <select id="eventCategory"><option>Academic</option><option>Cultural</option><option>Sports</option><option>Notice</option></select></div>
+        </div>
+        <div class="form-two">
+          <div><label for="eventStart">Starts</label><input id="eventStart" type="time" value="10:00" required /></div>
+          <div><label for="eventEnd">Ends</label><input id="eventEnd" type="time" value="11:00" required /></div>
+        </div>
+        <label for="eventVenue">Venue</label><input id="eventVenue" placeholder="e.g. LG-03 or Main Lawn" maxlength="60" required />
+        <label for="eventDetails">Details <span class="optional">(optional)</span></label><textarea id="eventDetails" rows="3" maxlength="240" placeholder="What should attendees know?"></textarea>
+      </div>
+      <p id="eventFormError" class="modal-error" role="alert"></p>
+      <div class="modal-actions">
+        <button id="eventDelete" class="button button-danger hidden" type="button">Delete</button>
+        <span class="spacer"></span>
+        <button id="eventCancel" class="button button-quiet" type="button">Cancel</button>
+        <button id="eventSave" class="button button-primary" type="submit">Announce <span aria-hidden="true">↗</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>
