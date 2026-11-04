@@ -338,8 +338,7 @@ const DEPARTMENT_TIMETABLES = {
     { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
     { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
     { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
-    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
-
+    
     // SATURDAY
     { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "FUN", type: "extra" }],
   "Electronics and Communication Engineering": [  // MONDAY
