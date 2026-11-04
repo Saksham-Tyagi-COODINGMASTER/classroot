@@ -43,10 +43,8 @@ The Express server serves the production files from `dist/`. The `/api/health` e
 
 ## Notes
 
-- The app is a frontend demo. Login is not real authentication.
-- Sign in with an institution email ending in `@clt.edu` or `@college.edu`. Demo accounts (defined in `DEMO_ACCOUNTS` in `script.js`):
-  - Professor: `professor@clt.edu` / `admin2026`
-  - Student: `student@clt.edu` / `student2026`
+- Sign-in is Google Workspace OAuth 2.0 restricted to your institution domain. See **Google Workspace sign-in** below.
+- The rest of the app is still a frontend demo: timetables, bookings and events live in browser localStorage.
 - **Events tab** (both roles): timetable-style timeline of campus events. Professors can add, announce, edit and delete events by default. Students are view-only; clicking **Add event** (or Edit) opens a passcode modal. The passcode is `EVENT_PASSCODE` in `script.js` (currently `event2026`); once entered, a student can edit until they sign out, and a floating **Add event** pill appears bottom-right for authorized users. Events are saved in browser localStorage, starting from `defaultEventsData`. The passcode check is client-side only and visible in the page source, so it is a demo gate, not real security.
 - Replace the sample timetables by searching `script.js` for `TODO: ADD WEEKEND CLASS DATA HERE`, `TODO: ADD STUDENT SCHEDULES HERE`, `TODO: ADD MORE PROFESSOR CLASSES HERE` and `TODO: ADD MORE STUDENT CLASSES HERE`.
 - Settings → "Load samples" adds example bookings so you can preview the Free / Booked / Clash map states.
@@ -59,10 +57,10 @@ The Express server serves the production files from `dist/`. The `/api/health` e
 - **Report (Professor):** utilization heatmap (day × slot) with peak/idle bars, clashes-prevented tally, departmental allocation donut (by batch prefix), audit-log preview and **Export CSV Report** (downloads the audit log + bookings).
 - **Report (Student):** weekly load gauge and per-day density, regular vs extra split, and primary floors/rooms.
 - **Clash prevention:** the Slots booking form now refuses a booking that overlaps another booking or a professor timetable class, and logs it as "Clash prevented". Use Settings → Load samples to preview the Clash map state.
-- **Settings:** dark/light switch (also in the header), accent colour (Blueprint Cyan / High-Contrast Neon), notification toggles, change password, event passcode management (professor) or lock/unlock (student), and Clear cache. Theme and accent are saved in localStorage.
+- **Settings:** dark/light switch (also in the header), accent colour (Blueprint Cyan / High-Contrast Neon), notification toggles, event passcode management (professor) or lock/unlock (student), and Clear cache. Theme and accent are saved in localStorage.
 - **Theming:** all colours are CSS custom properties in `style.css` (`:root`, then `:root[data-theme="light"]` and `:root[data-accent="neon"]`). Change the tokens there to restyle.
 - **Notifications** are in-portal toasts. 15-minute reminders check today's classes every 20 s; instant and room-change alerts fire when another tab of the same browser publishes a booking or event.
-- Passwords and passcodes are stored client-side for demo purposes only.
+- The event passcode is stored client-side for demo purposes only.
 
 ## Slots search pill and Office tab
 
@@ -84,9 +82,38 @@ The Express server serves the production files from `dist/`. The `/api/health` e
 - Click a room to open its inspector: a day picker, the full slot-by-slot schedule for that day (Free / Booked / Clash with the class and its source) and a Mon-Sun "week at a glance" grid.
 - The booking form refuses a slot already used by either timetable or another booking. Reports ignore the Slots view and always use the whole week.
 
+## Google Workspace sign-in
+
+Sign-in uses Google Identity Services (OAuth 2.0 / OpenID Connect) and only accepts accounts on one Workspace domain. No passwords are stored anywhere and no third-party email service is used (notifications are in-portal toasts and `.ics` calendar exports).
+
+### One-time setup (needs the institute's Workspace admin or a Workspace account)
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) signed in with your **institution** account and create a project (e.g. `classroot`).
+2. **APIs & Services -> OAuth consent screen**: choose user type **Internal** (only visible when the project belongs to the institute's Workspace organization; this makes Google itself block every account outside the domain). App name `CLASSROOT`, add your email as support/developer contact.
+3. **APIs & Services -> Credentials -> Create credentials -> OAuth client ID -> Web application**. Add **Authorized JavaScript origins**:
+   - `http://localhost:5173` (npm run dev)
+   - `http://localhost:3000` (npm start)
+   - your deployed origin, e.g. `https://<user>.github.io` (no path, no trailing slash)
+4. Copy the **Client ID**.
+5. Copy `.env.example` to `.env` and fill in `VITE_GOOGLE_CLIENT_ID`, `VITE_ALLOWED_DOMAIN` and `VITE_PROFESSOR_EMAILS`. Restart `npm run dev`.
+6. For GitHub Pages: repository **Settings -> Secrets and variables -> Actions -> Variables**, add the same three `VITE_*` variables, then re-run the deploy workflow.
+
+### How the domain restriction is enforced
+
+- The consent screen is **Internal** (Google blocks outside accounts).
+- The app checks the ID token: issuer, audience (your client ID), expiry, `email_verified`, the `hd` hosted-domain claim and the `@domain` suffix.
+- When the Express server is running (`npm run build && npm start`), the browser also posts the token to `POST /api/auth/google`, where `googleToken.js` verifies Google's signature (RS256, against Google's published signing keys, using only Node's built-in `crypto`). A server rejection always blocks sign-in.
+- On static hosting such as GitHub Pages there is no server, so only the in-browser claim check runs. That is fine for a demo, but anyone can tamper with a static page, so host the Express server if you need sign-in to be tamper-proof.
+
+### Roles and timetables
+
+- Faculty are the emails in `VITE_PROFESSOR_EMAILS`; every other account is a Student.
+- Timetable classes are matched by each class's `owner` email in `script.js`. Replace the sample `@clt.edu` owners with real institution emails, or while testing map your login to a sample timetable in `ACCOUNT_ALIASES` (`script.js`, section 4).
+- To test before you have the real domain, set `VITE_ALLOWED_DOMAIN=gmail.com` and use a personal Google account as the client's test user.
+
 ## Multiple professor and student accounts
 
-- Add accounts in `DEMO_ACCOUNTS` (`script.js`). Demo set: `professor@clt.edu` / `admin2026`, `professor2@clt.edu` / `faculty2026`, `student@clt.edu` / `student2026`, `student2@college.edu` / `student2027`. Emails must end in `@clt.edu` or `@college.edu`.
+- Accounts come from Google sign-in (see above); there is no account list to maintain.
 - Give each class an `owner` (that account's email, or an array of emails for a class several students share) in `professorScheduleData` / `studentScheduleData`. Classes without `owner` belong to the first demo account of that role.
 - Each account's Schedule tab, Report, calendar (.ics) export and reminders use only its own classes. A professor's published bookings are tagged with their email.
 - The Slots tab merges **all** accounts' classes, so a room shows Booked for anyone's class and Clash when two different classes share a room, day and slot. The same class listed under several accounts counts once.

@@ -109,6 +109,7 @@ const SUBJECT_OPTIONS = [
     "Electrical Systems & Electronics",
     "Quantum Physics",
     "Chemistry",
+    "Biology",
     "Co-curricular Activities"
 ];
 
@@ -205,8 +206,305 @@ function defaultDay() { const t = todayName(); return SCHEDULE_DAYS.includes(t) 
 //   Slots tab together, so a room shows Booked/Clash for everyone's classes.
 // ======================================================================
 
+// ======================================================================
+// 3-DEPT. DEPARTMENT TIMETABLES BY EMAIL PREFIX (standalone lookup; not wired into the UI)
+// ======================================================================
+// An email whose part before "@" STARTS WITH a prefix below belongs to that department,
+// e.g. mc26bt015@iitdh.ac.in -> "Mathematics & Computing".
+const DEPARTMENT_PREFIXES = {
+  ce26bt: "Civil Engineering",
+  ch26bt: "Chemical Engineering",
+  cs26bt: "Computer Science Engineering",
+  ee26bt: "Electrical Engineering / EEE",   // Electrical Engineering and EEE share this prefix
+  ec26bt: "Electronics and Communication Engineering",
+  ep26bt: "Engineering Physics",
+  mc26bt: "Mathematics & Computing",
+  me26bt: "Mechanical Engineering"
+};
+
+// ► ENTER THE REAL WEEKLY SCHEDULE FOR EACH DEPARTMENT HERE (one object per class), e.g.
+//   { day: "Monday", slot: "08:30–09:25", room: "107", subject: "Calculus", batch: "MA 108", faculty: "Dr. X" },
+// `slot` must be an exact label from DAY_PATTERNS above.
+const DEPARTMENT_TIMETABLES = {
+  "Civil Engineering": [    // MONDAY
+    { day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Biology", batch: "BB 101", faculty: "Prof. Swananda", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "08:30–09:55", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "FUN", type: "extra" }],
+  "Chemical Engineering": [    // MONDAY
+    { day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Biology", batch: "BB 101", faculty: "Prof. Swananda", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "08:30–09:55", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Biology", batch: "BB 101", faculty: "Prof. Swananda", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "FUN", type: "extra" }],
+  "Computer Science Engineering": [  // MONDAY
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "08:30–09:55", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Supriya", type: "regular" },
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "TBA", type: "extra" }],
+  "Electrical Engineering / EEE": [   // MONDAY
+    { day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "203", subject: "Formal Communication", batch: "EE 101 O", faculty: "Prof. Omkar Bembalge", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "FUN", type: "extra" }],
+  "Electronics and Communication Engineering": [  // MONDAY
+    { day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "203", subject: "Formal Communication", batch: "EE 101 O", faculty: "Prof. Omkar Bembalge", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "FUN", type: "extra" }],
+  "Engineering Physics": [    // MONDAY
+    { day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "10:00–11:25", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Anmol Kumar", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "08:30–09:55", room: "106", subject: "Chemistry", batch: "CH 101", faculty: "Prof. Supriya", type: "regular" },
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "TBA", type: "extra" }],
+  "Mathematics & Computing": [{ day: "Monday", slot: "08:30–09:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+    { day: "Tuesday", slot: "08:30–09:55", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Tuesday", slot: "11:30–12:30", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "08:30–09:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "ME 104", faculty: "Prof. Sangmesh", type: "regular" },
+    { day: "Friday", slot: "08:30–09:25", room: "006", subject: "Electrical Systems & Electronics", batch: "EE 101", faculty: "Prof. Amarkumar", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "106", subject: "Calculus", batch: "MA 108", faculty: "Prof. Sagnik Sen", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "106", subject: "Quantum Physics", batch: "PH 101", faculty: "Prof. R Prabhu", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "TBA", type: "extra" }
+  ],
+  "Mechanical Engineering": [    // MONDAY
+    { day: "Monday", slot: "09:30–10:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Monday", slot: "10:30–11:25", room: "106", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Monday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // TUESDAY
+    { day: "Tuesday", slot: "11:30–12:30", room: "003", subject: "Linear Algebra", batch: "MA 1XX", faculty: "Prof. Ankur Dwivedi", type: "regular" },
+    { day: "Tuesday", slot: "14:00–16:00", room: "LAB", subject: "Intro to Mechanical Engineering", batch: "ME 101", faculty: "Prof. Dhiraj V Patil", type: "regular" },
+
+    // WEDNESDAY
+    { day: "Wednesday", slot: "08:30–09:25", room: "003", subject: "Linear Algebra", batch: "MA 1XX", faculty: "Prof. Ankur Dwivedi", type: "regular" },
+    { day: "Wednesday", slot: "09:30–10:25", room: "LG 05", subject: "Intro to Mechanical Engineering", batch: "ME 101", faculty: "Prof. Dhiraj V Patil", type: "regular" },
+    { day: "Wednesday", slot: "10:30–11:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Wednesday", slot: "11:30–12:25", room: "106", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Wednesday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // THURSDAY
+    { day: "Thursday", slot: "10:00–11:25", room: "107", subject: "Design Thinking & Creativity", batch: "HS 101", faculty: "Prof. Sangmesh", type: "regular" },
+    { day: "Thursday", slot: "14:00–16:00", room: "TBA", subject: "Formal Communication", batch: "SUB", faculty: "Prof. Omkar", type: "regular" },
+
+    // FRIDAY
+    { day: "Friday", slot: "08:30–09:25", room: "106", subject: "Engineering Mechanics", batch: "ME 201", faculty: "Prof. Satyapriya", type: "regular" },
+    { day: "Friday", slot: "09:30–10:25", room: "003", subject: "Linear Algebra", batch: "MA 1XX", faculty: "Prof. Ankur Dwivedi", type: "regular" },
+    { day: "Friday", slot: "10:30–11:25", room: "LG 05", subject: "Intro to Mechanical Engineering", batch: "ME 101", faculty: "Prof. Rakesh", type: "regular" },
+    { day: "Friday", slot: "11:30–12:25", room: "107", subject: "Computer Programming", batch: "CS 101", faculty: "Prof. Aikta Arya", type: "regular" },
+    { day: "Friday", slot: "14:00–17:00", room: "LAB", subject: "CS Programming / Engineering / Science Lab", batch: "LAB", faculty: "LAB", type: "regular" },
+
+    // SATURDAY
+    { day: "Saturday", slot: "10:30–12:30", room: "LG", subject: "Co-curricular Activities", batch: "FUN", faculty: "TBA", type: "extra" }]
+};
+
+function departmentForEmail(email) {
+  const local = String(email || "").trim().toLowerCase().split("@")[0];
+  const prefix = Object.keys(DEPARTMENT_PREFIXES).find(item => local.startsWith(item));
+  return prefix ? DEPARTMENT_PREFIXES[prefix] : null;
+}
+// "mc26bt009" -> 2026 (admission batch year), or null when the email has no two-digit year after the branch code.
+function batchYearForEmail(email) {
+  const match = /^[a-z]{2}(\d{2})/.exec(String(email || "").trim().toLowerCase());
+  return match ? 2000 + Number(match[1]) : null;
+}
+// Classes (subject filled in) of one department; blank skeleton rows are skipped.
+function departmentClasses(department) {
+  return (DEPARTMENT_TIMETABLES[department] || []).filter(item => item.subject);
+}
+// Every department class, for the room map / clash checks.
+function allDepartmentClasses() {
+  return Object.keys(DEPARTMENT_TIMETABLES).flatMap(departmentClasses);
+}
+function departmentTimetableFor(email) {
+  const department = departmentForEmail(email);
+  return department ? { department, batchYear: batchYearForEmail(email), classes: departmentClasses(department) } : null;
+}
+
 // ---------- PROFESSOR TIMETABLE (teaching schedule) ----------
-const professorScheduleData = [
+const professorScheduleData = [    
+    // ==========================================
+    // PROFESSOR — BIOLOGY (swanand@iitdh.ac.in)
+    // ==========================================
+    {
+        day: "Monday",
+        slot: "10:30–11:25",
+        room: "006",
+        subject: "Biology",
+        batch: "BB 101",
+        type: "regular",
+        owner: "swanand@iitdh.ac.in"
+    },
+    {
+        day: "Wednesday",
+        slot: "11:30–12:25",
+        room: "006",
+        subject: "Biology",
+        batch: "BB 101",
+        type: "regular",
+        owner: "swanand@iitdh.ac.in"
+    },
+    {
+        day: "Friday",
+        slot: "08:30–09:25",
+        room: "006",
+        subject: "Biology",
+        batch: "BB 101",
+        type: "regular",
+        owner: "swanand@iitdh.ac.in"
+    },
 
     // ==========================================
     // PROFESSOR 1 — EE 101
@@ -219,7 +517,7 @@ const professorScheduleData = [
         subject: "Electrical Systems & Electronics",
         batch: "EE 101",
         type: "regular",
-        owner: "professor@clt.edu"
+        owner: "amarkumar@iitdh.ac.in"
     },
     {
         day: "Wednesday",
@@ -228,7 +526,7 @@ const professorScheduleData = [
         subject: "Electrical Systems & Electronics",
         batch: "EE 101",
         type: "regular",
-        owner: "professor@clt.edu"
+        owner: "amarkumar@iitdh.ac.in"
     },
     {
         day: "Friday",
@@ -237,7 +535,7 @@ const professorScheduleData = [
         subject: "Electrical Systems & Electronics",
         batch: "EE 101",
         type: "regular",
-        owner: "professor@clt.edu"
+        owner: "amarkumar@iitdh.ac.in"
     },
 
 
@@ -252,7 +550,7 @@ const professorScheduleData = [
         subject: "Linear Algebra",
         batch: "MA 1XX",
         type: "regular",
-        owner: "professor2@clt.edu"
+        owner: "ankurdwi.vedant@iitdh.ac.in"
     },
     {
         day: "Wednesday",
@@ -261,7 +559,7 @@ const professorScheduleData = [
         subject: "Linear Algebra",
         batch: "MA 1XX",
         type: "regular",
-        owner: "professor2@clt.edu"
+        owner: "ankurdwi.vedant@iitdh.ac.in"
     },
     {
         day: "Friday",
@@ -270,57 +568,77 @@ const professorScheduleData = [
         subject: "Linear Algebra",
         batch: "MA 1XX",
         type: "regular",
-        owner: "professor2@clt.edu"
-    }
-
-];
-
-// ---------- STUDENT TIMETABLE (class slot view) ----------
-const studentScheduleData = [
-
-    // ==========================================
-    // STUDENT 1
-    // ==========================================
-
-    // MONDAY
-    {
-        day: "Monday",
-        slot: "09:30–10:25",
-        room: "107",
-        subject: "Computer Programming",
-        batch: "CS 101",
-        type: "regular",
-        owner: "student@clt.edu"
+        owner: "ankurdwi.vedant@iitdh.ac.in"
     },
+
+    // ==========================================
+    // CALCULUS — sen@iitdh.ac.in
+    // ==========================================
+
     {
-        day: "Monday",
-        slot: "10:30–11:25",
+        day: "Tuesday",
+        slot: "08:30–09:55",
         room: "106",
-        subject: "Engineering Mechanics",
-        batch: "ME 201",
+        subject: "Calculus",
+        batch: "MA 108",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "sen@iitdh.ac.in"
     },
-    {
-        day: "Monday",
-        slot: "14:00–17:00",
-        room: "LAB",
-        subject: "CS Programming / Engineering / Science Lab",
-        batch: "LAB",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-
-    // TUESDAY
     {
         day: "Tuesday",
         slot: "11:30–12:30",
-        room: "003",
-        subject: "Linear Algebra",
-        batch: "MA 1XX",
+        room: "106",
+        subject: "Calculus",
+        batch: "MA 108",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "sen@iitdh.ac.in"
     },
+    {
+        day: "Wednesday",
+        slot: "08:30–09:25",
+        room: "106",
+        subject: "Calculus",
+        batch: "MA 108",
+        type: "regular",
+        owner: "sen@iitdh.ac.in"
+    },
+    {
+        day: "Friday",
+        slot: "09:30–10:25",
+        room: "106",
+        subject: "Calculus",
+        batch: "MA 108",
+        type: "regular",
+        owner: "sen@iitdh.ac.in"
+    },
+
+    // ==========================================
+    // INTRO TO MECHANICAL ENGINEERING — dhiraj@iitdh.ac.in, punnag.chatterjee@iitdh.ac.in, rakesh@iitdh.ac.in
+    // ==========================================
+
+    {
+        day: "Wednesday",
+        slot: "09:30–10:25",
+        room: "LG 05",
+        subject: "Intro to Mechanical Engineering",
+        batch: "ME 101",
+        type: "regular",
+        owner: ["dhiraj@iitdh.ac.in", "punnag.chatterjee@iitdh.ac.in", "rakesh@iitdh.ac.in"]
+    },
+    {
+        day: "Friday",
+        slot: "10:30–11:25",
+        room: "LG 05",
+        subject: "Intro to Mechanical Engineering",
+        batch: "ME 101",
+        type: "regular",
+        owner: ["dhiraj@iitdh.ac.in", "punnag.chatterjee@iitdh.ac.in", "rakesh@iitdh.ac.in"]
+    },
+
+    // ==========================================
+    // INTRO TO MECHANICAL ENGINEERING LAB — dhiraj@iitdh.ac.in
+    // ==========================================
+
     {
         day: "Tuesday",
         slot: "14:00–16:00",
@@ -328,66 +646,13 @@ const studentScheduleData = [
         subject: "Intro to Mechanical Engineering Lab",
         batch: "LAB",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "dhiraj@iitdh.ac.in"
     },
 
-    // WEDNESDAY
-    {
-        day: "Wednesday",
-        slot: "08:30–09:25",
-        room: "003",
-        subject: "Linear Algebra",
-        batch: "MA 1XX",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "09:30–10:25",
-        room: "LG 05",
-        subject: "Intro to Mechanical Engineering",
-        batch: "ME 101",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "10:30–11:25",
-        room: "107",
-        subject: "Computer Programming",
-        batch: "CS 101",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "11:30–12:25",
-        room: "106",
-        subject: "Engineering Mechanics",
-        batch: "ME 201",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "14:00–17:00",
-        room: "LAB",
-        subject: "CS Programming / Engineering / Science Lab",
-        batch: "LAB",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
+    // ==========================================
+    // FORMAL COMMUNICATION — omkarbembalge@iitdh.ac.in, vyom@iitdh.ac.in
+    // ==========================================
 
-    // THURSDAY
-    {
-        day: "Thursday",
-        slot: "10:00–11:25",
-        room: "107",
-        subject: "Design Thinking & Creativity",
-        batch: "HS 101",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
     {
         day: "Thursday",
         slot: "14:00–16:00",
@@ -395,10 +660,45 @@ const studentScheduleData = [
         subject: "Formal Communication",
         batch: "SUB",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: ["omkarbembalge@iitdh.ac.in", "vyom@iitdh.ac.in"]
     },
 
-    // FRIDAY
+    // ==========================================
+    // DESIGN THINKING & CREATIVITY — sangamesh@iitdh.ac.in, somashekara@iitdh.ac.in
+    // ==========================================
+
+    {
+        day: "Thursday",
+        slot: "10:00–11:25",
+        room: "107",
+        subject: "Design Thinking & Creativity",
+        batch: "HS 101",
+        type: "regular",
+        owner: ["sangamesh@iitdh.ac.in", "somashekara@iitdh.ac.in"]
+    },
+
+    // ==========================================
+    // ENGINEERING MECHANICS — satyapriya.gupta@iitdh.ac.in
+    // ==========================================
+
+    {
+        day: "Monday",
+        slot: "10:30–11:25",
+        room: "106",
+        subject: "Engineering Mechanics",
+        batch: "ME 201",
+        type: "regular",
+        owner: "satyapriya.gupta@iitdh.ac.in"
+    },
+    {
+        day: "Wednesday",
+        slot: "11:30–12:25",
+        room: "106",
+        subject: "Engineering Mechanics",
+        batch: "ME 201",
+        type: "regular",
+        owner: "satyapriya.gupta@iitdh.ac.in"
+    },
     {
         day: "Friday",
         slot: "08:30–09:25",
@@ -406,25 +706,30 @@ const studentScheduleData = [
         subject: "Engineering Mechanics",
         batch: "ME 201",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "satyapriya.gupta@iitdh.ac.in"
     },
+
+    // ==========================================
+    // COMPUTER PROGRAMMING — aikta@iitdh.ac.in
+    // ==========================================
+
     {
-        day: "Friday",
+        day: "Monday",
         slot: "09:30–10:25",
-        room: "003",
-        subject: "Linear Algebra",
-        batch: "MA 1XX",
+        room: "107",
+        subject: "Computer Programming",
+        batch: "CS 101",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "aikta@iitdh.ac.in"
     },
     {
-        day: "Friday",
+        day: "Wednesday",
         slot: "10:30–11:25",
-        room: "LG 05",
-        subject: "Intro to Mechanical Engineering",
-        batch: "ME 101",
+        room: "107",
+        subject: "Computer Programming",
+        batch: "CS 101",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "aikta@iitdh.ac.in"
     },
     {
         day: "Friday",
@@ -433,238 +738,70 @@ const studentScheduleData = [
         subject: "Computer Programming",
         batch: "CS 101",
         type: "regular",
-        owner: "student@clt.edu"
+        owner: "aikta@iitdh.ac.in"
     },
-    {
-        day: "Friday",
-        slot: "14:00–17:00",
-        room: "LAB",
-        subject: "CS Programming / Engineering / Science Lab",
-        batch: "LAB",
-        type: "regular",
-        owner: "student@clt.edu"
-    },
-
-    // SATURDAY
-    {
-        day: "Saturday",
-        slot: "10:30–12:30",
-        room: "LG",
-        subject: "Co-curricular Activities",
-        batch: "FUN",
-        faculty: "TBA",
-        type: "extra"
-    },
-
 
     // ==========================================
-    // STUDENT 2
-    // student2@college.edu
+    // QUANTUM PHYSICS — prabhurama@iitdh.ac.in
     // ==========================================
 
-    // MONDAY
     {
         day: "Monday",
         slot: "08:30–09:25",
         room: "106",
         subject: "Quantum Physics",
         batch: "PH 101",
-        faculty: "TBA",
         type: "regular",
-        owner: "student2@college.edu"
+        owner: "prabhurama@iitdh.ac.in"
     },
     {
-        day: "Monday",
+        day: "Wednesday",
         slot: "09:30–10:25",
-        room: "107",
-        subject: "Computer Programming",
-        batch: "CS 101",
-        faculty: "TBA",
+        room: "106",
+        subject: "Quantum Physics",
+        batch: "PH 101",
         type: "regular",
-        owner: "student2@college.edu"
+        owner: "prabhurama@iitdh.ac.in"
     },
     {
-        day: "Monday",
+        day: "Friday",
         slot: "10:30–11:25",
-        room: "006",
-        subject: "Electrical Systems & Electronics",
-        batch: "EE 101",
-        faculty: "TBA",
+        room: "106",
+        subject: "Quantum Physics",
+        batch: "PH 101",
         type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Monday",
-        slot: "14:00–17:00",
-        room: "LAB",
-        subject: "CS Programming / Engineering / Science Lab",
-        batch: "LAB",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
+        owner: "prabhurama@iitdh.ac.in"
     },
 
-    // TUESDAY
-    {
-        day: "Tuesday",
-        slot: "08:30–09:55",
-        room: "106",
-        subject: "Calculus",
-        batch: "MA 108",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
+    // ==========================================
+    // CHEMISTRY — anmolkumar@iitdh.ac.in, kksingh@iitdh.ac.in, supriya.rej@iitdh.ac.in
+    // ==========================================
+
     {
         day: "Tuesday",
         slot: "10:00–11:25",
         room: "106",
         subject: "Chemistry",
         batch: "CH 101",
-        faculty: "TBA",
         type: "regular",
-        owner: "student2@college.edu"
+        owner: ["anmolkumar@iitdh.ac.in", "kksingh@iitdh.ac.in", "supriya.rej@iitdh.ac.in"]
     },
-    {
-        day: "Tuesday",
-        slot: "11:30–12:25",
-        room: "106",
-        subject: "Calculus",
-        batch: "MA 108",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-
-    // WEDNESDAY
-    {
-        day: "Wednesday",
-        slot: "08:30–09:25",
-        room: "106",
-        subject: "Calculus",
-        batch: "MA 108",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "09:30–10:25",
-        room: "106",
-        subject: "Quantum Physics",
-        batch: "PH 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "10:30–11:25",
-        room: "107",
-        subject: "Computer Programming",
-        batch: "CS 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "11:30–12:25",
-        room: "006",
-        subject: "Electrical Systems & Electronics",
-        batch: "EE 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Wednesday",
-        slot: "14:00–17:00",
-        room: "LAB",
-        subject: "CS Programming / Engineering / Science Lab",
-        batch: "LAB",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-
-    // THURSDAY
     {
         day: "Thursday",
         slot: "08:30–09:55",
         room: "106",
         subject: "Chemistry",
         batch: "CH 101",
-        faculty: "TBA",
         type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Thursday",
-        slot: "10:00–11:25",
-        room: "107",
-        subject: "Design Thinking & Creativity",
-        batch: "HS 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-
-    // FRIDAY
-    {
-        day: "Friday",
-        slot: "08:30–09:25",
-        room: "006",
-        subject: "Electrical Systems & Electronics",
-        batch: "EE 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Friday",
-        slot: "09:30–10:25",
-        room: "106",
-        subject: "Calculus",
-        batch: "MA 108",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Friday",
-        slot: "10:30–11:25",
-        room: "106",
-        subject: "Quantum Physics",
-        batch: "PH 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-    {
-        day: "Friday",
-        slot: "11:30–12:25",
-        room: "107",
-        subject: "Computer Programming",
-        batch: "CS 101",
-        faculty: "TBA",
-        type: "regular",
-        owner: "student2@college.edu"
-    },
-
-    // SATURDAY
-    {
-        day: "Saturday",
-        slot: "10:30–12:30",
-        room: "LG",
-        subject: "Co-curricular Activities",
-        batch: "FUN",
-        faculty: "TBA",
-        type: "extra",
-        owner: "student2@college.edu"
+        owner: ["anmolkumar@iitdh.ac.in", "kksingh@iitdh.ac.in", "supriya.rej@iitdh.ac.in"]
     }
 
 ];
+
+// ---------- STUDENT TIMETABLE (class slot view) ----------
+// Demo student timetables were removed. Student timetables now come from DEPARTMENT_TIMETABLES
+// (looked up by email prefix). Kept as an empty array so the room map and clash checks keep working.
+const studentScheduleData = [];
 
 // ======================================================================
 // 3b. EVENTS
@@ -687,20 +824,36 @@ const defaultEventsData = [
 const EVENT_PASSCODE = "event2026";
 
 // ======================================================================
-// 4. DEMO LOGIN CREDENTIALS (hardcoded for demonstration only).
-// ⚠ Anything in client-side JavaScript is visible to every visitor. Replace
-// this block with a real authentication service (e.g. Google Workspace /
-// institutional SSO) before deploying.
+// 4. GOOGLE WORKSPACE SIGN-IN (institutional OAuth 2.0)
 // ======================================================================
-const ALLOWED_EMAIL_DOMAINS = ["clt.edu", "college.edu"];
-const DEMO_ACCOUNTS = [
-  { email: "professor@clt.edu", password: "admin2026",   role: "Professor", name: "Professor" },
-  { email: "student@clt.edu",   password: "student2026", role: "Student",   name: "Student"   },
-  // Extra demo accounts. Each account sees only its own timetable (see "owner" in the timetable data).
-  { email: "professor2@clt.edu",   password: "faculty2026", role: "Professor", name: "Professor 2" },
-  { email: "student2@college.edu", password: "student2027", role: "Student",   name: "Student 2"   }
+// Sign-in uses Google Identity Services (OAuth 2.0 / OpenID Connect) and is
+// restricted to ONE Google Workspace for Education domain. Configure it in a
+// `.env` file (see .env.example) or as GitHub repository variables:
+//   VITE_GOOGLE_CLIENT_ID   OAuth client ID from Google Cloud Console
+//   VITE_ALLOWED_DOMAIN     e.g. institution.edu.in
+//   VITE_PROFESSOR_EMAILS   comma-separated faculty emails; everyone else = Student
+const ENV = import.meta.env || {};
+const GOOGLE_CLIENT_ID = String(ENV.VITE_GOOGLE_CLIENT_ID || "").trim();
+const ALLOWED_DOMAIN = String(ENV.VITE_ALLOWED_DOMAIN || "institution.edu.in").trim().toLowerCase();
+const PROFESSOR_EMAILS = String(ENV.VITE_PROFESSOR_EMAILS || "").split(",").map(item => item.trim().toLowerCase()).filter(Boolean);
+
+// Sample timetables below are owned by the demo emails. While you are still
+// filling in real timetables, map a real login to a sample owner so that
+// account sees that timetable, e.g.  "you@institution.edu.in": "student@clt.edu".
+// Better long-term: change the `owner` fields in the timetable data to real emails.
+const ACCOUNT_ALIASES = {
+  // "you@institution.edu.in": "student@clt.edu",
+};
+function sampleOwnerFor(email) {
+  const key = String(email || "").toLowerCase();
+  return String(ACCOUNT_ALIASES[key] || key).toLowerCase();
+}
+
+// Names/roles of the sample owners used inside the timetable data (no passwords).
+const KNOWN_ACCOUNTS = [
+  { email: "professor@clt.edu",    role: "Professor", name: "Professor" },
+  { email: "professor2@clt.edu",   role: "Professor", name: "Professor 2" }
 ];
-// TODO: ADD MORE DEMO ACCOUNTS HERE (same shape as the two above)
 
 // ======================================================================
 // 5. APP STATE & HELPERS
@@ -713,7 +866,6 @@ const AUDIT_KEY = "cltAuditLog";
 const PREFS_KEY = "cltPrefs";
 const THEME_KEY = "cltTheme";
 const ACCENT_KEY = "cltAccent";
-const PW_KEY = "cltPwOverrides";
 const PASSCODE_KEY = "cltEventPasscode";
 const DEPT_COLORS = ["var(--accent)", "var(--violet)", "var(--free)", "var(--booked)", "var(--clash)", "#5b8def"];
 const EVENT_UNLOCK_KEY = "cltEventsUnlocked";
@@ -788,10 +940,6 @@ function readJSON(key, fallback) {
 function writeJSON(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage unavailable */ }
 }
-function effectivePassword(account) {
-  const overrides = readJSON(PW_KEY, {});
-  return typeof overrides[account.email] === "string" ? overrides[account.email] : account.password;
-}
 function getEventPasscode() {
   try { return localStorage.getItem(PASSCODE_KEY) || EVENT_PASSCODE; } catch { return EVENT_PASSCODE; }
 }
@@ -853,13 +1001,17 @@ function allRooms() {
 // PER-ACCOUNT TIMETABLES: each login sees only its own classes.
 // ----------------------------------------------------------------------
 function defaultOwner(role) {
-  const account = DEMO_ACCOUNTS.find(item => item.role === role);
+  const account = KNOWN_ACCOUNTS.find(item => item.role === role);
   return account ? account.email.toLowerCase() : "";
 }
 function classesFor(user) {
   if (!user) return [];
+  if (user.role !== "Professor") {
+    const department = departmentForEmail(user.email);
+    if (department) return departmentClasses(department);
+  }
   const data = user.role === "Professor" ? professorScheduleData : studentScheduleData;
-  const email = user.email.toLowerCase();
+  const email = sampleOwnerFor(user.email);
   return data.filter(item => {
     const owners = item.owner ? [].concat(item.owner) : [defaultOwner(user.role)];
     return owners.some(owner => String(owner).toLowerCase() === email);
@@ -885,8 +1037,8 @@ function studentExtraClasses(user) {
   return getBookings()
     .filter(item => item.date >= from && item.date <= to && subjects.has(String(item.subject).trim().toLowerCase()))
     .map(item => {
-      const owner = DEMO_ACCOUNTS.find(account => account.email.toLowerCase() === String(item.owner || "").toLowerCase());
-      return { ...item, slot: item.slot || item.time, type: "extra", faculty: owner ? owner.name : "Faculty", published: true };
+      const owner = KNOWN_ACCOUNTS.find(account => account.email.toLowerCase() === String(item.owner || "").toLowerCase());
+      return { ...item, slot: item.slot || item.time, type: "extra", faculty: owner ? owner.name : (item.ownerName || "Faculty"), published: true };
     });
 }
 // A student's full timetable = own classes + synced extra classes. Professors keep myClasses().
@@ -904,6 +1056,7 @@ function roomSessions(roomName) {
   };
   professorScheduleData.forEach(item => add(item, "Professor timetable"));
   studentScheduleData.forEach(item => add(item, "Student timetable"));
+  allDepartmentClasses().forEach(item => add(item, "Department timetable"));
   getBookings().forEach(item => add({ ...item, slot: item.slot || item.time }, `Published booking · ${item.date}`));
   return map;
 }
@@ -942,32 +1095,88 @@ function renderActivity() {
 // ======================================================================
 // 6. AUTHENTICATION
 // ======================================================================
-function validateLogin(email, password) {
-  if (!email || !password) {
-    return { ok: false, title: "Missing details", message: "Enter both your institution email and your password to continue.", focus: email ? "#userPassword" : "#userEmail" };
-  }
-  if (!EMAIL_PATTERN.test(email)) {
-    return { ok: false, title: "Invalid email format", message: "That doesn't look like a valid email address. Use the form name@clt.edu.", focus: "#userEmail" };
-  }
-  const domain = email.split("@")[1];
-  if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
-    return { ok: false, title: "Institution email required", message: `Only institutional accounts can sign in. Use an address ending in ${ALLOWED_EMAIL_DOMAINS.map(d => "@" + d).join(" or ")}.`, focus: "#userEmail" };
-  }
-  const account = DEMO_ACCOUNTS.find(item => item.email === email && effectivePassword(item) === password);
-  if (!account) {
-    return { ok: false, title: "Invalid credentials", message: "The email or password you entered is incorrect. Check your details and try again.", focus: "#userPassword" };
-  }
-  return { ok: true, account };
+// ---- Google sign-in -------------------------------------------------
+function decodeJwt(token) {
+  const part = String(token || "").split(".")[1];
+  if (!part) throw new Error("Malformed token");
+  const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")), ch => ch.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-let dialogFocusTarget = "#userEmail";
+// Returns an error message, or "" when the Google ID-token claims are acceptable.
+// (The Express server in server.js repeats this check AND verifies Google's signature.)
+function checkGoogleClaims(claims) {
+  const email = String(claims.email || "").toLowerCase();
+  if (!["accounts.google.com", "https://accounts.google.com"].includes(claims.iss)) return "That sign-in did not come from Google.";
+  if (claims.aud !== GOOGLE_CLIENT_ID) return "That sign-in was issued for a different application.";
+  if (!claims.exp || claims.exp * 1000 < Date.now()) return "That sign-in has expired. Please try again.";
+  if (!claims.email_verified) return "Your Google email address is not verified.";
+  const hostedDomainOk = ALLOWED_DOMAIN === "gmail.com" || String(claims.hd || "").toLowerCase() === ALLOWED_DOMAIN;
+  if (!email.endsWith("@" + ALLOWED_DOMAIN) || !hostedDomainOk) {
+    return `Only @${ALLOWED_DOMAIN} Google Workspace accounts can sign in. Choose your institution account.`;
+  }
+  return "";
+}
+
+// Asks the Express server to verify the token with Google. Returns:
+//   { email, name }  verified by the server
+//   { error }        the server rejected the sign-in (never fall back from this)
+//   null             no API on this host (e.g. GitHub Pages) -> use the client-side check
+async function verifyWithServer(credential) {
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL || "/"}api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential })
+    });
+    if (!(response.headers.get("content-type") || "").includes("application/json")) return null;
+    const data = await response.json();
+    return response.ok ? data : { error: data.error || "The server rejected this sign-in." };
+  } catch {
+    return null;
+  }
+}
+
+async function handleGoogleCredential(response) {
+  let claims;
+  try { claims = decodeJwt(response && response.credential); }
+  catch { return showAuthDialog({ title: "Sign-in failed", message: "Google returned an unreadable response. Please try again." }); }
+  const problem = checkGoogleClaims(claims);
+  if (problem) return showAuthDialog({ title: "Institution account required", message: problem });
+  const server = await verifyWithServer(response.credential);
+  if (server && server.error) return showAuthDialog({ title: "Sign-in rejected", message: server.error });
+  const email = String((server && server.email) || claims.email).toLowerCase();
+  const name = (server && server.name) || claims.name || email.split("@")[0];
+  enterPortal({ email, name, role: PROFESSOR_EMAILS.includes(email) ? "Professor" : "Student" });
+}
+
+function initGoogleSignIn() {
+  const holder = $("#googleSignIn");
+  $("#domainHint").innerHTML = `Use your <code>@${escapeHTML(ALLOWED_DOMAIN)}</code> Google Workspace account.`;
+  if (!GOOGLE_CLIENT_ID) {
+    holder.innerHTML = `<p class="field-hint">Google sign-in is not configured yet. Set <code>VITE_GOOGLE_CLIENT_ID</code> (see README).</p>`;
+    return;
+  }
+  const start = () => {
+    window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select: false });
+    window.google.accounts.id.renderButton(holder, { theme: "filled_black", size: "large", shape: "pill", text: "signin_with", width: 280 });
+  };
+  if (window.google && window.google.accounts && window.google.accounts.id) return start();
+  const script = document.createElement("script");
+  script.src = "https://accounts.google.com/gsi/client";
+  script.async = true;
+  script.onload = start;
+  script.onerror = () => { holder.innerHTML = `<p class="field-hint">Could not load Google sign-in. Check your connection and reload.</p>`; };
+  document.head.appendChild(script);
+}
+
+let dialogFocusTarget = "#googleSignIn";
 function showAuthDialog({ title, message, focus }) {
   const dialog = $("#authDialog");
-  dialogFocusTarget = focus || "#userEmail";
+  dialogFocusTarget = focus || "#googleSignIn";
   $("#authDialogTitle").textContent = title;
   $("#authDialogMessage").textContent = message;
-  $("#userEmail").setAttribute("aria-invalid", focus === "#userEmail" ? "true" : "false");
-  $("#userPassword").setAttribute("aria-invalid", focus === "#userPassword" ? "true" : "false");
   const card = $(".login-card");
   card.classList.remove("shake");
   void card.offsetWidth; // restart the shake animation
@@ -983,13 +1192,10 @@ function closeAuthDialog() {
   if (typeof dialog.close === "function" && dialog.open) dialog.close();
   else dialog.removeAttribute("open");
 }
-function clearLoginErrors() {
-  ["#userEmail", "#userPassword"].forEach(selector => $(selector).removeAttribute("aria-invalid"));
-}
 
 function persistSession(account) {
   const store = safeStorage("sessionStorage");
-  try { store && store.setItem(SESSION_KEY, account.email); } catch { /* ignore */ }
+  try { store && store.setItem(SESSION_KEY, JSON.stringify({ email: account.email, name: account.name, role: account.role })); } catch { /* ignore */ }
 }
 function clearSession() {
   const store = safeStorage("sessionStorage");
@@ -997,10 +1203,10 @@ function clearSession() {
 }
 function restoreSession() {
   const store = safeStorage("sessionStorage");
-  let email = null;
-  try { email = store && store.getItem(SESSION_KEY); } catch { /* ignore */ }
-  const account = DEMO_ACCOUNTS.find(item => item.email === email);
-  if (account) enterPortal(account);
+  let account = null;
+  try { account = JSON.parse((store && store.getItem(SESSION_KEY)) || "null"); } catch { /* ignore */ }
+  // Only restore a session that still belongs to the configured institution domain.
+  if (account && typeof account.email === "string" && account.email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)) enterPortal(account);
 }
 
 function enterPortal(account) {
@@ -1052,22 +1258,11 @@ function signOut() {
   $$(".page-section").forEach(section => section.classList.remove("is-entering", "is-leaving"));
   $("#schedulePage").classList.remove("hidden");
 
-  $("#loginForm").reset();
-  $("#userPassword").type = "password";
-  syncPasswordToggle();
-  clearLoginErrors();
   closeAuthDialog();
+  if (window.google && window.google.accounts && window.google.accounts.id) window.google.accounts.id.disableAutoSelect();
   $("#loginView").classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "auto" });
-  $("#userEmail").focus();
   notify("You have been signed out securely.");
-}
-
-function syncPasswordToggle() {
-  const visible = $("#userPassword").type === "text";
-  const button = $("#togglePassword");
-  button.setAttribute("aria-pressed", String(visible));
-  button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
 }
 
 // ---------- profile dropdown ----------
@@ -1246,7 +1441,7 @@ function renderStudentSchedule() {
 
   $("#studentAgenda").innerHTML = rows.length
     ? rows.join("")
-    : `<div class="empty-state"><span>◌</span><b>No classes on ${escapeHTML(activeDay)}</b><p>Nothing is scheduled. Add class slots to <code>studentScheduleData</code> in script.js.</p></div>`;
+    : `<div class="empty-state"><span>◌</span><b>No classes on ${escapeHTML(activeDay)}</b><p>Nothing is scheduled. Fill in this department's classes in <code>DEPARTMENT_TIMETABLES</code> in script.js.</p></div>`;
 
   const first = [...today].sort((a, b) => SCHEDULE_SLOTS.indexOf(a.slot) - SCHEDULE_SLOTS.indexOf(b.slot))[0];
   const venues = [...new Set(today.map(item => item.room))];
@@ -2033,7 +2228,7 @@ function allSessions() {
   const seen = new Set();
   const list = [];
   const published = getBookings().map(item => ({ ...item, type: "extra" }));
-  [...professorScheduleData, ...studentScheduleData, ...published].forEach(item => {
+  [...professorScheduleData, ...studentScheduleData, ...allDepartmentClasses(), ...published].forEach(item => {
     const key = `${item.day}|${item.slot}|${item.room}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -2315,8 +2510,6 @@ function renderSettings() {
   $("#passcodeSettingsHint").textContent = isProfessor
     ? "Students must enter this passcode before they can add or edit events. You always have full access."
     : eventsUnlocked ? "Event editing is unlocked for this session." : "You can view events. Enter the passcode to add or edit them.";
-  $("#pwMessage").textContent = "";
-  $("#pwMessage").className = "form-msg";
 }
 function setFormMessage(selector, text, ok) {
   const el = $(selector);
@@ -2375,31 +2568,6 @@ function renderAll() {
 // ======================================================================
 // 12. EVENT WIRING
 // ======================================================================
-// ---- login ----
-$("#loginForm").addEventListener("submit", event => {
-  event.preventDefault();
-  const email = $("#userEmail").value.trim().toLowerCase();
-  const password = $("#userPassword").value;
-  const result = validateLogin(email, password);
-  if (!result.ok) {
-    $("#userPassword").value = "";
-    showAuthDialog(result);
-    return;
-  }
-  clearLoginErrors();
-  $("#loginForm").reset();
-  $("#userPassword").type = "password";
-  syncPasswordToggle();
-  enterPortal(result.account);
-});
-["#userEmail", "#userPassword"].forEach(selector => $(selector).addEventListener("input", clearLoginErrors));
-$("#togglePassword").addEventListener("click", () => {
-  const input = $("#userPassword");
-  input.type = input.type === "password" ? "text" : "password";
-  syncPasswordToggle();
-  input.focus();
-});
-
 // ---- invalid-login dialog ----
 $("#authDialogClose").addEventListener("click", closeAuthDialog);
 $("#authDialog").addEventListener("click", event => { if (event.target === event.currentTarget) closeAuthDialog(); });
@@ -2469,19 +2637,6 @@ $("#icsEvents").addEventListener("click", event => {
 });
 
 // ---- account & security ----
-$("#passwordForm").addEventListener("submit", event => {
-  event.preventDefault();
-  const account = DEMO_ACCOUNTS.find(item => item.email === currentUser.email);
-  const current = $("#pwCurrent").value, next = $("#pwNew").value;
-  if (!account || current !== effectivePassword(account)) return setFormMessage("#pwMessage", "Your current password is incorrect.", false);
-  if (next.length < 8) return setFormMessage("#pwMessage", "Use at least 8 characters for the new password.", false);
-  if (next === current) return setFormMessage("#pwMessage", "Choose a password different from the current one.", false);
-  const overrides = readJSON(PW_KEY, {});
-  overrides[account.email] = next;
-  writeJSON(PW_KEY, overrides);
-  $("#passwordForm").reset();
-  setFormMessage("#pwMessage", "Password updated. Use it next time you sign in.", true);
-});
 $("#passcodeSave").addEventListener("click", () => {
   if (!currentUser || currentUser.role !== "Professor") return;
   const value = $("#passcodeNew").value.trim();
@@ -2647,11 +2802,12 @@ $("#bookingForm").addEventListener("submit", event => {
     room,
     day: new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }),
     floor: $("#floorSelect").value,
-    owner: currentUser.email
+    owner: currentUser.email,
+    ownerName: currentUser.name
   };
   // Conflict prevention: refuse a booking that collides with another booking or a timetable class.
   const sameSlot = bookings.some(item => item.room === room && item.date === booking.date && item.time === booking.time)
-    || [...professorScheduleData, ...studentScheduleData].some(item => item.room === room && item.day === booking.day && item.slot === booking.slot);
+    || [...professorScheduleData, ...studentScheduleData, ...allDepartmentClasses()].some(item => item.room === room && item.day === booking.day && item.slot === booking.slot);
   if (sameSlot) {
     addAudit("Clash prevented", `${booking.subject} (${booking.batch}) blocked · ${booking.date} ${booking.time}`, room);
     logActivity(`Clash prevented: ${booking.subject} · ${room}`);
@@ -2717,4 +2873,5 @@ populateSubjectOptions();
 setFindOpen(window.innerWidth > 1180 && window.innerHeight >= 780);   // starts collapsed on small screens
 setBookingOpen(window.innerWidth > 1180); // starts collapsed on tablets / phones so the blueprint stays clear
 renderActivity();
+initGoogleSignIn();
 restoreSession();
