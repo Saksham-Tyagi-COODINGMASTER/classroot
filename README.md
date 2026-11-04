@@ -45,7 +45,7 @@ The Express server serves the production files from `dist/`. The `/api/health` e
 
 - Sign-in is Google Workspace OAuth 2.0 restricted to your institution domain. See **Google Workspace sign-in** below.
 - The rest of the app is still a frontend demo: timetables, bookings and events live in browser localStorage.
-- **Events tab** (both roles): timetable-style timeline of campus events. Professors can add, announce, edit and delete events by default. Students are view-only; clicking **Add event** (or Edit) opens a passcode modal. The passcode is `EVENT_PASSCODE` in `script.js` (currently `event2026`); once entered, a student can edit until they sign out, and a floating **Add event** pill appears bottom-right for authorized users. Events are saved in browser localStorage, starting from `defaultEventsData`. The passcode check is client-side only and visible in the page source, so it is a demo gate, not real security.
+- **Events tab** (both roles): timetable-style timeline of campus events. Professors can add, announce, edit and delete events by default. Students are view-only; 
 - Replace the sample timetables by searching `script.js` for `TODO: ADD WEEKEND CLASS DATA HERE`, `TODO: ADD STUDENT SCHEDULES HERE`, `TODO: ADD MORE PROFESSOR CLASSES HERE` and `TODO: ADD MORE STUDENT CLASSES HERE`.
 - Settings → "Load samples" adds example bookings so you can preview the Free / Booked / Clash map states.
 - Bookings currently use browser localStorage, so they are saved in that browser only.
