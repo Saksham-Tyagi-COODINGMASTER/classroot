@@ -1236,3 +1236,11 @@ input[aria-invalid="true"] { border-color: var(--clash); }
 .view-row{grid-template-columns:1fr 1fr;gap:8px 8px}
 .view-row select{padding-right:26px;font-size:12px}
 .view-now{grid-column:1/-1;height:30px}
+/* Hide professor-only settings from students */
+.professor-only {
+  display: none !important;
+}
+
+body.professor-mode .professor-only {
+  display: block !important;
+}
