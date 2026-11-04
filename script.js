@@ -1147,7 +1147,10 @@ async function handleGoogleCredential(response) {
   if (server && server.error) return showAuthDialog({ title: "Sign-in rejected", message: server.error });
   const email = String((server && server.email) || claims.email).toLowerCase();
   const name = (server && server.name) || claims.name || email.split("@")[0];
-  enterPortal({ email, name, role: PROFESSOR_EMAILS.includes(email) ? "Professor" : "Student" });
+  enterPortal(
+  { email, name, role: PROFESSOR_EMAILS.includes(email) ? "Professor" : "Student" },
+  { newLogin: true }
+);
 }
 
 function initGoogleSignIn() {
@@ -2955,6 +2958,28 @@ $("#seedBookings").addEventListener("click", () => {
   logActivity("Sample bookings loaded.");
   renderAll();
   notify("Sample bookings loaded — open the Slots tab to preview.");
+});
+
+// ======================================================================
+// SESSION ACTIVITY TRACKING — 5-MINUTE INACTIVITY TIMEOUT
+// ======================================================================
+
+["pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach(eventName => {
+  document.addEventListener(eventName, recordSessionActivity, {
+    passive: true
+  });
+});
+
+// Check expiry when the user returns to the browser tab.
+// Background browser timers can be delayed.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !currentUser) return;
+
+  if (Date.now() - getLastSessionActivity() >= SESSION_IDLE_TIMEOUT) {
+    signOut();
+  } else {
+    scheduleSessionExpiry();
+  }
 });
 
 // ======================================================================
