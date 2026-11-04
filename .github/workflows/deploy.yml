@@ -38,6 +38,9 @@ jobs:
         run: npm run build
         env:
           GITHUB_PAGES: true
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_ALLOWED_DOMAIN: ${{ vars.VITE_ALLOWED_DOMAIN }}
+          VITE_PROFESSOR_EMAILS: ${{ vars.VITE_PROFESSOR_EMAILS }}
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
