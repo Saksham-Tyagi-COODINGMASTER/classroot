@@ -1312,6 +1312,10 @@ function restoreSession() {
 
 function enterPortal(account, { newLogin = false } = {}) {
   currentUser = { name: account.name, email: account.email, role: account.role };
+     document.body.classList.toggle(
+    "professor-mode",
+    currentUser.role === "Professor"
+  );
   persistSession(account, { newLogin });
   scheduleSessionExpiry();
   eventsUnlocked = false;
