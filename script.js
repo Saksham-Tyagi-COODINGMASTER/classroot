@@ -1192,25 +1192,125 @@ function closeAuthDialog() {
   else dialog.removeAttribute("open");
 }
 
-function persistSession(account) {
+
+const SESSION_IDLE_TIMEOUT = 5 * 60 * 1000;
+const SESSION_ACTIVITY_KEY = `${SESSION_KEY}:lastActivity`;
+let sessionIdleTimer = null;
+
+function persistSession(account, { newLogin = false } = {}) {
   const store = safeStorage("sessionStorage");
-  try { store && store.setItem(SESSION_KEY, JSON.stringify({ email: account.email, name: account.name, role: account.role })); } catch { /* ignore */ }
+  try {
+    if (!store) return;
+
+    store.setItem(SESSION_KEY, JSON.stringify({
+      email: account.email,
+      name: account.name,
+      role: account.role
+    }));
+
+    // Only a fresh login starts a new inactivity period.
+    // Restoring a session after refresh must preserve its old timestamp.
+    if (newLogin || !store.getItem(SESSION_ACTIVITY_KEY)) {
+      store.setItem(SESSION_ACTIVITY_KEY, String(Date.now()));
+    }
+  } catch { /* ignore */ }
 }
+
 function clearSession() {
+  clearTimeout(sessionIdleTimer);
+  sessionIdleTimer = null;
+
   const store = safeStorage("sessionStorage");
-  try { store && store.removeItem(SESSION_KEY); store && store.removeItem(EVENT_UNLOCK_KEY); } catch { /* ignore */ }
+  try {
+    if (!store) return;
+    store.removeItem(SESSION_KEY);
+    store.removeItem(SESSION_ACTIVITY_KEY);
+    store.removeItem(EVENT_UNLOCK_KEY);
+  } catch { /* ignore */ }
 }
+
+function getLastSessionActivity() {
+  const store = safeStorage("sessionStorage");
+  try {
+    return Number(store && store.getItem(SESSION_ACTIVITY_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function scheduleSessionExpiry() {
+  clearTimeout(sessionIdleTimer);
+
+  if (!currentUser) return;
+
+  const lastActivity = getLastSessionActivity();
+  const remaining = SESSION_IDLE_TIMEOUT - (Date.now() - lastActivity);
+
+  if (remaining <= 0) {
+    signOut();
+    return;
+  }
+
+  sessionIdleTimer = setTimeout(() => {
+    if (Date.now() - getLastSessionActivity() >= SESSION_IDLE_TIMEOUT) {
+      signOut();
+    } else {
+      scheduleSessionExpiry();
+    }
+  }, remaining + 100);
+}
+
+function recordSessionActivity() {
+  if (!currentUser) return;
+
+  const lastActivity = getLastSessionActivity();
+
+  // Never allow an already-expired session to become active again.
+  if (!lastActivity || Date.now() - lastActivity >= SESSION_IDLE_TIMEOUT) {
+    signOut();
+    return;
+  }
+
+  // Avoid excessive storage writes from frequent activity events.
+  if (Date.now() - lastActivity >= 1000) {
+    const store = safeStorage("sessionStorage");
+    try {
+      store && store.setItem(SESSION_ACTIVITY_KEY, String(Date.now()));
+    } catch { /* ignore */ }
+
+    scheduleSessionExpiry();
+  }
+}
+
 function restoreSession() {
   const store = safeStorage("sessionStorage");
   let account = null;
-  try { account = JSON.parse((store && store.getItem(SESSION_KEY)) || "null"); } catch { /* ignore */ }
-  // Only restore a session that still belongs to the configured institution domain.
-  if (account && typeof account.email === "string" && account.email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)) enterPortal(account);
+
+  try {
+    account = JSON.parse((store && store.getItem(SESSION_KEY)) || "null");
+  } catch { /* ignore */ }
+
+  if (
+    account &&
+    typeof account.email === "string" &&
+    account.email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)
+  ) {
+    const lastActivity = getLastSessionActivity();
+
+    if (lastActivity && Date.now() - lastActivity >= SESSION_IDLE_TIMEOUT) {
+      clearSession();
+      return;
+    }
+
+    enterPortal(account, { newLogin: false });
+  }
 }
 
-function enterPortal(account) {
+
+function enterPortal(account, { newLogin = false } = {}) {
   currentUser = { name: account.name, email: account.email, role: account.role };
-  persistSession(account);
+  persistSession(account, { newLogin });
+  scheduleSessionExpiry();
   eventsUnlocked = false;
   try { const store = safeStorage("sessionStorage"); eventsUnlocked = Boolean(store && store.getItem(EVENT_UNLOCK_KEY) === account.email); } catch { /* ignore */ }
   eventFilter = "upcoming";
