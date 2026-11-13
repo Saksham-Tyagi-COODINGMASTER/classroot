@@ -1322,7 +1322,7 @@ function restoreSession() {
   if (
     account &&
     typeof account.email === "string" &&
-    account.email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)
+    isAllowedEmail(account.email)
   ) {
     const lastActivity = getLastSessionActivity();
 
