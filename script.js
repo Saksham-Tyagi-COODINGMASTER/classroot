@@ -1117,14 +1117,30 @@ function decodeJwt(token) {
 // (The Express server in server.js repeats this check AND verifies Google's signature.)
 function checkGoogleClaims(claims) {
   const email = String(claims.email || "").toLowerCase();
-  if (!["accounts.google.com", "https://accounts.google.com"].includes(claims.iss)) return "That sign-in did not come from Google.";
-  if (claims.aud !== GOOGLE_CLIENT_ID) return "That sign-in was issued for a different application.";
-  if (!claims.exp || claims.exp * 1000 < Date.now()) return "That sign-in has expired. Please try again.";
-  if (!claims.email_verified) return "Your Google email address is not verified.";
-  const hostedDomainOk = ALLOWED_DOMAIN === "gmail.com" || String(claims.hd || "").toLowerCase() === ALLOWED_DOMAIN;
-  if (!email.endsWith("@" + ALLOWED_DOMAIN) || !hostedDomainOk) {
-    return `Only @${ALLOWED_DOMAIN} Google Workspace accounts can sign in. Choose your institution account.`;
+
+  if (!["accounts.google.com", "https://accounts.google.com"].includes(claims.iss))
+    return "That sign-in did not come from Google.";
+
+  if (claims.aud !== GOOGLE_CLIENT_ID)
+    return "That sign-in was issued for a different application.";
+
+  if (!claims.exp || claims.exp * 1000 < Date.now())
+    return "That sign-in has expired. Please try again.";
+
+  if (!claims.email_verified)
+    return "Your Google email address is not verified.";
+
+  const isException = ALLOWED_EMAILS.includes(email);
+
+  const hostedDomainOk =
+    ALLOWED_DOMAIN === "gmail.com" ||
+    String(claims.hd || "").toLowerCase() === ALLOWED_DOMAIN;
+
+  if (!isException &&
+      (!email.endsWith("@" + ALLOWED_DOMAIN) || !hostedDomainOk)) {
+    return `Only authorized accounts can sign in.`;
   }
+
   return "";
 }
 
