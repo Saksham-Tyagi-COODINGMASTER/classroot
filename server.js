@@ -18,6 +18,14 @@ const distPath = path.join(__dirname, "dist");
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "";
 const ALLOWED_DOMAIN = String(process.env.ALLOWED_DOMAIN || process.env.VITE_ALLOWED_DOMAIN || "institution.edu.in").toLowerCase();
+const ALLOWED_EMAILS = String(
+  process.env.ALLOWED_EMAILS ||
+  process.env.VITE_ALLOWED_EMAILS ||
+  ""
+)
+  .split(",")
+  .map(email => email.trim().toLowerCase())
+  .filter(Boolean);
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "10kb" }));
@@ -31,9 +39,15 @@ app.post("/api/auth/google", async (req, res) => {
     const payload = await verifyGoogleIdToken(req.body?.credential, { clientId: CLIENT_ID });
     const email = String(payload.email || "").toLowerCase();
     const hostedDomainOk = ALLOWED_DOMAIN === "gmail.com" || String(payload.hd || "").toLowerCase() === ALLOWED_DOMAIN;
-    if (!payload.email_verified || !email.endsWith("@" + ALLOWED_DOMAIN) || !hostedDomainOk) {
-      return res.status(403).json({ error: `Only @${ALLOWED_DOMAIN} Google Workspace accounts can sign in.` });
-    }
+    const isException = ALLOWED_EMAILS.includes(email);
+
+if (
+  !payload.email_verified ||
+  (!isException && (
+    !email.endsWith("@" + ALLOWED_DOMAIN) ||
+    !hostedDomainOk
+  ))
+) {
     res.json({ email, name: payload.name || email.split("@")[0] });
   } catch {
     res.status(401).json({ error: "Google sign-in could not be verified." });
