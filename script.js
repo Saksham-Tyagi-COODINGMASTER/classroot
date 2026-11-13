@@ -835,6 +835,16 @@ const ENV = import.meta.env || {};
 const GOOGLE_CLIENT_ID = String(ENV.VITE_GOOGLE_CLIENT_ID || "").trim();
 const ALLOWED_DOMAIN = String(ENV.VITE_ALLOWED_DOMAIN || "institution.edu.in").trim().toLowerCase();
 const PROFESSOR_EMAILS = String(ENV.VITE_PROFESSOR_EMAILS || "").split(",").map(item => item.trim().toLowerCase()).filter(Boolean);
+const ALLOWED_EMAILS = String(ENV.VITE_ALLOWED_EMAILS || "")
+  .split(",")
+  .map(item => item.trim().toLowerCase())
+  .filter(Boolean);
+
+function isAllowedEmail(email) {
+  const normalized = String(email || "").toLowerCase();
+  return normalized.endsWith("@" + ALLOWED_DOMAIN) ||
+         ALLOWED_EMAILS.includes(normalized);
+}
 
 // Sample timetables below are owned by the demo emails. While you are still
 // filling in real timetables, map a real login to a sample owner so that
