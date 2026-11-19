@@ -751,7 +751,7 @@ const professorScheduleData = [
         subject: "Quantum Physics",
         batch: "PH 101",
         type: "regular",
-        owner: "prabhurama@iitdh.ac.in"
+        owner: ["prabhurama@iitdh.ac.in", "mc26bt009@iitdh.ac.in"]
     },
     {
         day: "Wednesday",
@@ -760,7 +760,7 @@ const professorScheduleData = [
         subject: "Quantum Physics",
         batch: "PH 101",
         type: "regular",
-        owner: "prabhurama@iitdh.ac.in"
+        owner: ["prabhurama@iitdh.ac.in", "mc26bt009@iitdh.ac.in"]
     },
     {
         day: "Friday",
@@ -769,7 +769,7 @@ const professorScheduleData = [
         subject: "Quantum Physics",
         batch: "PH 101",
         type: "regular",
-        owner: "prabhurama@iitdh.ac.in"
+        owner: ["prabhurama@iitdh.ac.in", "mc26bt009@iitdh.ac.in"]
     },
 
     // ==========================================
